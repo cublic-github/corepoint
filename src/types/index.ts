@@ -35,14 +35,14 @@ export interface QuizResponse {
 export interface TargetPreset {
   id: string;
   name: string;
-  values: Vector5;
+  values: Vector6;
   order: number;
 }
 
 export interface WeightPreset {
   id: string;
   name: string;
-  values: Vector5;
+  values: Vector6;
   order: number;
 }
 

@@ -18,7 +18,7 @@ import {
   deleteWeightPreset,
 } from "@/lib/firestore";
 import { calcSyncScore, getSyncLabel, getSyncColor, dimLabels } from "@/lib/scoring";
-import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Vector5 } from "@/types";
+import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Vector5, Vector6 } from "@/types";
 
 type Tab = "users" | "quiz" | "settings";
 
@@ -167,7 +167,7 @@ function UsersTab({
     })
     .map((r) => ({
       ...r,
-      sync: target && weight ? calcSyncScore(r.finalVector.slice(0, 5), target.values, weight.values) : 0,
+      sync: target && weight ? calcSyncScore(r.finalVector, target.values, weight.values) : 0,
     }));
 
   if (sortField === "sync") scored.sort((a, b) => sortDir * (a.sync - b.sync));
@@ -337,7 +337,7 @@ function DetailPanel({
 
   const target = targetPresets.find((p) => p.id === tId);
   const weight = weightPresets.find((p) => p.id === wId);
-  const score = target && weight ? calcSyncScore(user.finalVector.slice(0, 5), target.values, weight.values) : 0;
+  const score = target && weight ? calcSyncScore(user.finalVector, target.values, weight.values) : 0;
   const sl = getSyncLabel(score);
   const color = getSyncColor(score);
   const circumference = 326.73;
@@ -423,27 +423,19 @@ function DetailPanel({
                   <span></span><span className="text-center">User</span><span></span><span className="text-center">Target</span>
                 </div>
                 <div className="space-y-2.5">
-                  {dimLabels.slice(0, 5).map((d, i) => {
+                  {dimLabels.map((d, i) => {
                     const diff = user.finalVector[i] - target.values[i];
                     return (
                       <div key={d.key} className="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center">
                         <span className="text-xs text-base-600">{d.name}</span>
-                        <span className="text-xs font-medium text-center text-base-800">{user.finalVector[i].toFixed(1)}</span>
+                        <span className="text-xs font-medium text-center text-base-800">{user.finalVector[i]?.toFixed(1) ?? "-"}</span>
                         <span className={`text-[11px] font-medium text-center ${diff > 0 ? "text-accent" : diff < 0 ? "text-warm" : "text-base-400"}`}>
                           {diff > 0 ? "+" : ""}{diff.toFixed(1)}
                         </span>
-                        <span className="text-xs text-center text-base-400">{target.values[i].toFixed(1)}</span>
+                        <span className="text-xs text-center text-base-400">{target.values[i]?.toFixed(1) ?? "-"}</span>
                       </div>
                     );
                   })}
-                  {user.finalVector[5] != null && (
-                    <div className="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center border-t border-base-200 pt-2 mt-1">
-                      <span className="text-xs text-base-600">{dimLabels[5].name}</span>
-                      <span className="text-xs font-medium text-center" style={{ color: dimLabels[5].color }}>{user.finalVector[5].toFixed(1)}</span>
-                      <span className="text-[11px] text-center text-base-300">-</span>
-                      <span className="text-xs text-center text-base-300">-</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -778,28 +770,28 @@ function PresetSection({
 }: {
   title: string;
   presets: (TargetPreset | WeightPreset)[];
-  onAdd: (name: string, values: Vector5) => Promise<void>;
-  onUpdate: (id: string, name: string, values: Vector5) => Promise<void>;
+  onAdd: (name: string, values: Vector6) => Promise<void>;
+  onUpdate: (id: string, name: string, values: Vector6) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
-  const [formValues, setFormValues] = useState<Vector5>([5, 5, 5, 5, 5]);
+  const [formValues, setFormValues] = useState<Vector6>([5, 5, 5, 5, 5, 5]);
 
-  const vecLabels = ["c1", "c2", "c3", "c4", "c5"];
+  const vecLabels = ["c1", "c2", "c3", "c4", "c5", "c6"];
 
   const startEdit = (p: TargetPreset | WeightPreset) => {
     setEditId(p.id);
     setFormName(p.name);
-    setFormValues([...p.values] as Vector5);
+    setFormValues([...p.values] as Vector6);
     setShowForm(true);
   };
 
   const startAdd = () => {
     setEditId(null);
     setFormName("");
-    setFormValues([5, 5, 5, 5, 5]);
+    setFormValues([5, 5, 5, 5, 5, 5]);
     setShowForm(true);
   };
 
@@ -834,7 +826,7 @@ function PresetSection({
             {vecLabels.map((vl, i) => (
               <div key={vl} className="flex-1">
                 <label className="text-[10px] text-base-400 block mb-0.5">{vl}</label>
-                <input type="number" step="0.5" min="0" max="10" value={formValues[i]} onChange={(e) => { const v = [...formValues] as Vector5; v[i] = parseFloat(e.target.value) || 0; setFormValues(v); }} className="w-full border border-base-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-accent" />
+                <input type="number" step="0.5" min="0" max="10" value={formValues[i]} onChange={(e) => { const v = [...formValues] as Vector6; v[i] = parseFloat(e.target.value) || 0; setFormValues(v); }} className="w-full border border-base-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-accent" />
               </div>
             ))}
           </div>
@@ -869,8 +861,8 @@ function PresetSection({
 }
 
 // ===== パイチャートSVG =====
-const pieColors = ["#0d9488", "#d97706", "#2563eb", "#7c3aed", "#059669"];
-const pieDimLabels = ["c1:抽象化", "c2:指向性", "c3:合理性", "c4:社会的距離", "c5:言語解像度"];
+const pieColors = ["#0d9488", "#d97706", "#2563eb", "#7c3aed", "#059669", "#e11d48"];
+const pieDimLabels = ["c1:抽象化", "c2:指向性", "c3:合理性", "c4:社会的距離", "c5:言語解像度", "c6:優柔不断度"];
 
 function WeightPieChart({ values, size = 80 }: { values: number[]; size?: number }) {
   const total = values.reduce((a, b) => a + b, 0);
@@ -929,26 +921,26 @@ function WeightPresetSection({
   onDelete,
 }: {
   presets: WeightPreset[];
-  onAdd: (name: string, values: Vector5) => Promise<void>;
-  onUpdate: (id: string, name: string, values: Vector5) => Promise<void>;
+  onAdd: (name: string, values: Vector6) => Promise<void>;
+  onUpdate: (id: string, name: string, values: Vector6) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [formName, setFormName] = useState("");
-  const [formValues, setFormValues] = useState<Vector5>([3, 3, 3, 3, 3]);
+  const [formValues, setFormValues] = useState<Vector6>([3, 3, 3, 3, 3, 3]);
 
   const startEdit = (p: WeightPreset) => {
     setEditId(p.id);
     setFormName(p.name);
-    setFormValues([...p.values] as Vector5);
+    setFormValues([...p.values] as Vector6);
     setShowForm(true);
   };
 
   const startAdd = () => {
     setEditId(null);
     setFormName("");
-    setFormValues([3, 3, 3, 3, 3]);
+    setFormValues([3, 3, 3, 3, 3, 3]);
     setShowForm(true);
   };
 
@@ -994,7 +986,7 @@ function WeightPresetSection({
                       type="range"
                       min={0} max={10} step={1}
                       value={formValues[i]}
-                      onChange={(e) => { const v = [...formValues] as Vector5; v[i] = parseFloat(e.target.value) || 0; setFormValues(v); }}
+                      onChange={(e) => { const v = [...formValues] as Vector6; v[i] = parseFloat(e.target.value) || 0; setFormValues(v); }}
                       className="weight-slider flex-1"
                       style={{ "--thumb-color": pieColors[i], "--track-color": pieColors[i], "--pct": `${formValues[i] * 10}%` } as React.CSSProperties}
                     />

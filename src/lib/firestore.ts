@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Answer, Vector5, Vector6 } from "@/types";
+import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Answer, Vector6 } from "@/types";
 
 // ===== Quizzes =====
 
@@ -125,7 +125,7 @@ export async function getTargetPresets(): Promise<TargetPreset[]> {
 
 export async function addTargetPreset(data: {
   name: string;
-  values: Vector5;
+  values: Vector6;
 }): Promise<string> {
   const snap = await getDocs(collection(db, "targetPresets"));
   const maxOrder = snap.docs.reduce(
@@ -160,7 +160,7 @@ export async function getWeightPresets(): Promise<WeightPreset[]> {
 
 export async function addWeightPreset(data: {
   name: string;
-  values: Vector5;
+  values: Vector6;
 }): Promise<string> {
   const snap = await getDocs(collection(db, "weightPresets"));
   const maxOrder = snap.docs.reduce(
