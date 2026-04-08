@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Answer, Vector5 } from "@/types";
+import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Answer, Vector5, Vector6 } from "@/types";
 
 // ===== Quizzes =====
 
@@ -95,7 +95,8 @@ export async function submitResponse(data: {
   respondentName: string;
   respondentEmail: string;
   answers: Answer[];
-  finalVector: Vector5;
+  finalVector: Vector6;
+  answerTimes: number[];
 }): Promise<string> {
   const ref = await addDoc(collection(db, "responses"), {
     ...data,

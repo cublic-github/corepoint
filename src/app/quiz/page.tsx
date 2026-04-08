@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getActiveQuizzes, submitResponse } from "@/lib/firestore";
 import { calculateFinalVector } from "@/lib/scoring";
-import type { Quiz, Vector5 } from "@/types";
+import type { Quiz, Vector6 } from "@/types";
 import { useRouter } from "next/navigation";
 
 export default function QuizPage() {
@@ -19,9 +19,10 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState(-1);
-  const [answers, setAnswers] = useState<{ quizId: string; choiceIndex: number }[]>([]);
+  const [answers, setAnswers] = useState<{ quizId: string; choiceIndex: number; responseTimeMs: number }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [fadeKey, setFadeKey] = useState(0);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(0);
 
   useEffect(() => {
     getActiveQuizzes()
@@ -37,12 +38,14 @@ export default function QuizPage() {
 
   const handleStart = () => {
     setStarted(true);
+    setQuestionStartTime(Date.now());
   };
 
   const handleNext = useCallback(async () => {
     if (selectedChoice < 0 || !currentQuiz) return;
 
-    const newAnswers = [...answers, { quizId: currentQuiz.id, choiceIndex: selectedChoice }];
+    const responseTimeMs = Date.now() - questionStartTime;
+    const newAnswers = [...answers, { quizId: currentQuiz.id, choiceIndex: selectedChoice, responseTimeMs }];
     setAnswers(newAnswers);
 
     if (isLast) {
@@ -51,21 +54,24 @@ export default function QuizPage() {
         const quiz = quizzes.find((q) => q.id === a.quizId)!;
         return quiz.choices[a.choiceIndex].vector;
       });
-      const finalVector = calculateFinalVector(choiceVectors);
+      const answerTimes = newAnswers.map((a) => a.responseTimeMs);
+      const finalVector = calculateFinalVector(choiceVectors, answerTimes);
 
       await submitResponse({
         respondentName: name.trim() || "匿名",
         respondentEmail: email.trim() || "test@example.com",
         answers: newAnswers,
-        finalVector: finalVector as Vector5,
+        finalVector: finalVector as Vector6,
+        answerTimes,
       });
       router.push("/quiz/thanks");
     } else {
       setCurrentIndex((i) => i + 1);
       setSelectedChoice(-1);
       setFadeKey((k) => k + 1);
+      setQuestionStartTime(Date.now());
     }
-  }, [selectedChoice, currentQuiz, answers, isLast, quizzes, name, email, router]);
+  }, [selectedChoice, currentQuiz, answers, isLast, quizzes, name, email, router, questionStartTime]);
 
   // --- 入力フォーム画面 ---
   if (!started) {

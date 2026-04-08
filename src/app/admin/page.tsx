@@ -167,7 +167,7 @@ function UsersTab({
     })
     .map((r) => ({
       ...r,
-      sync: target && weight ? calcSyncScore(r.finalVector, target.values, weight.values) : 0,
+      sync: target && weight ? calcSyncScore(r.finalVector.slice(0, 5), target.values, weight.values) : 0,
     }));
 
   if (sortField === "sync") scored.sort((a, b) => sortDir * (a.sync - b.sync));
@@ -337,7 +337,7 @@ function DetailPanel({
 
   const target = targetPresets.find((p) => p.id === tId);
   const weight = weightPresets.find((p) => p.id === wId);
-  const score = target && weight ? calcSyncScore(user.finalVector, target.values, weight.values) : 0;
+  const score = target && weight ? calcSyncScore(user.finalVector.slice(0, 5), target.values, weight.values) : 0;
   const sl = getSyncLabel(score);
   const color = getSyncColor(score);
   const circumference = 326.73;
@@ -423,7 +423,7 @@ function DetailPanel({
                   <span></span><span className="text-center">User</span><span></span><span className="text-center">Target</span>
                 </div>
                 <div className="space-y-2.5">
-                  {dimLabels.map((d, i) => {
+                  {dimLabels.slice(0, 5).map((d, i) => {
                     const diff = user.finalVector[i] - target.values[i];
                     return (
                       <div key={d.key} className="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center">
@@ -436,6 +436,14 @@ function DetailPanel({
                       </div>
                     );
                   })}
+                  {user.finalVector[5] != null && (
+                    <div className="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center border-t border-base-200 pt-2 mt-1">
+                      <span className="text-xs text-base-600">{dimLabels[5].name}</span>
+                      <span className="text-xs font-medium text-center" style={{ color: dimLabels[5].color }}>{user.finalVector[5].toFixed(1)}</span>
+                      <span className="text-[11px] text-center text-base-300">-</span>
+                      <span className="text-xs text-center text-base-300">-</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import type { SyncLabel, Vector5 } from "@/types";
+import type { SyncLabel, Vector5, Vector6 } from "@/types";
 
 /** 重み付きユークリッド距離 */
 export function calcDistance(
@@ -42,17 +42,52 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** 回答のベクトル加算から最終ベクトルを算出 */
+/** 回答のベクトル加算から最終ベクトルを算出（c1〜c5 + c6:優柔不断度） */
 export function calculateFinalVector(
-  choiceVectors: Vector5[]
-): Vector5 {
+  choiceVectors: Vector5[],
+  responseTimes: number[]
+): Vector6 {
   const result: Vector5 = [5.0, 5.0, 5.0, 5.0, 5.0];
   for (const vec of choiceVectors) {
     for (let i = 0; i < 5; i++) {
       result[i] = applyDamping(result[i], vec[i]);
     }
   }
-  return result;
+  const c6 = calculateDecisiveness(responseTimes);
+  return [...result, c6] as Vector6;
+}
+
+/**
+ * 回答時間（ミリ秒）から優柔不断度 c6 を算出 (0.0〜10.0)
+ *
+ * 基準:
+ *   〜5秒: 即断型 → 0.0〜2.0
+ *   5〜15秒: 標準 → 2.0〜5.0
+ *   15〜30秒: 慎重型 → 5.0〜7.0
+ *   30〜60秒: 熟考型 → 7.0〜9.0
+ *   60秒〜: 優柔不断型 → 9.0〜10.0
+ *
+ * 全問の平均回答時間をスコアに変換する。
+ */
+export function calculateDecisiveness(responseTimes: number[]): number {
+  if (responseTimes.length === 0) return 5.0;
+  const avgMs = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+  const avgSec = avgMs / 1000;
+
+  let score: number;
+  if (avgSec <= 5) {
+    score = (avgSec / 5) * 2.0;
+  } else if (avgSec <= 15) {
+    score = 2.0 + ((avgSec - 5) / 10) * 3.0;
+  } else if (avgSec <= 30) {
+    score = 5.0 + ((avgSec - 15) / 15) * 2.0;
+  } else if (avgSec <= 60) {
+    score = 7.0 + ((avgSec - 30) / 30) * 2.0;
+  } else {
+    score = 9.0 + Math.min(((avgSec - 60) / 60), 1.0);
+  }
+
+  return Math.round(score * 10) / 10;
 }
 
 /** シンクロ率の判定ラベル */
@@ -83,4 +118,5 @@ export const dimLabels = [
   { key: "c3", name: "合理性", color: "#2563eb", lo: "情緒的", hi: "合理的" },
   { key: "c4", name: "社会的距離", color: "#7c3aed", lo: "傍観", hi: "介入" },
   { key: "c5", name: "言語解像度", color: "#059669", lo: "未変換", hi: "翻訳上手" },
+  { key: "c6", name: "優柔不断度", color: "#e11d48", lo: "即断", hi: "熟考" },
 ];

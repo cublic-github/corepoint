@@ -1,4 +1,5 @@
 export type Vector5 = [number, number, number, number, number];
+export type Vector6 = [number, number, number, number, number, number];
 
 export interface Choice {
   text: string;
@@ -18,6 +19,7 @@ export interface Quiz {
 export interface Answer {
   quizId: string;
   choiceIndex: number;
+  responseTimeMs: number;
 }
 
 export interface QuizResponse {
@@ -25,7 +27,8 @@ export interface QuizResponse {
   respondentName: string;
   respondentEmail: string;
   answers: Answer[];
-  finalVector: Vector5;
+  finalVector: Vector6;
+  answerTimes: number[];
   createdAt: Date;
 }
 
