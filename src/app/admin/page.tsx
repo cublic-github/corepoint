@@ -405,19 +405,23 @@ function DetailPanel({
           <div className="mb-6">
             <h4 className="text-xs text-base-400 font-medium uppercase tracking-wider mb-4">Vector Breakdown</h4>
             <div className="space-y-4">
-              {dimLabels.map((d, i) => (
+              {dimLabels.map((d, i) => {
+                const uv = padToVector6(user.finalVector)[i];
+                const tv = target ? padToVector6(target.values)[i] : null;
+                return (
                 <div key={d.key}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-base-600">{d.key}: {d.name}</span>
-                    <span className="font-medium" style={{ color: d.color }}>{user.finalVector[i].toFixed(1)}</span>
+                    <span className="font-medium" style={{ color: d.color }}>{uv.toFixed(1)}</span>
                   </div>
                   <div className="relative w-full h-2 bg-base-100 rounded-full overflow-hidden">
-                    <div className="absolute h-full rounded-full transition-all duration-500" style={{ width: `${user.finalVector[i] * 10}%`, background: d.color }} />
-                    {target && <div className="absolute top-0 h-full w-0.5 bg-base-900/30" style={{ left: `${target.values[i] * 10}%` }} title={`Target: ${target.values[i]}`} />}
+                    <div className="absolute h-full rounded-full transition-all duration-500" style={{ width: `${uv * 10}%`, background: d.color }} />
+                    {tv != null && <div className="absolute top-0 h-full w-0.5 bg-base-900/30" style={{ left: `${tv * 10}%` }} title={`Target: ${tv}`} />}
                   </div>
                   <div className="flex justify-between text-[11px] text-base-400 mt-0.5"><span>{d.lo}</span><span>{d.hi}</span></div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -431,15 +435,17 @@ function DetailPanel({
                 </div>
                 <div className="space-y-2.5">
                   {dimLabels.map((d, i) => {
-                    const diff = user.finalVector[i] - target.values[i];
+                    const uv = padToVector6(user.finalVector)[i];
+                    const tv = padToVector6(target.values)[i];
+                    const diff = uv - tv;
                     return (
                       <div key={d.key} className="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center">
                         <span className="text-xs text-base-600">{d.name}</span>
-                        <span className="text-xs font-medium text-center text-base-800">{user.finalVector[i]?.toFixed(1) ?? "-"}</span>
+                        <span className="text-xs font-medium text-center text-base-800">{uv.toFixed(1)}</span>
                         <span className={`text-[11px] font-medium text-center ${diff > 0 ? "text-accent" : diff < 0 ? "text-warm" : "text-base-400"}`}>
                           {diff > 0 ? "+" : ""}{diff.toFixed(1)}
                         </span>
-                        <span className="text-xs text-center text-base-400">{target.values[i]?.toFixed(1) ?? "-"}</span>
+                        <span className="text-xs text-center text-base-400">{tv.toFixed(1)}</span>
                       </div>
                     );
                   })}
