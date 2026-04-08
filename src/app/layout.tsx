@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "CorePoint",
   description: "認知特性ベクトルによるシンクロ率アセスメントシステム",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({
