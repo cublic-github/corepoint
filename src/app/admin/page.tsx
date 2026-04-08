@@ -849,7 +849,7 @@ function PresetSection({
           <div key={p.id} className="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
             <div>
               <p className="text-sm font-medium text-base-800">{p.name}</p>
-              <p className="text-xs text-base-400 mt-0.5">{vecLabels.map((vl, i) => `${vl}:${p.values[i]}`).join(" ")}</p>
+              <p className="text-xs text-base-400 mt-0.5">{vecLabels.map((vl, i) => `${vl}:${padToVector6(p.values)[i]}`).join(" ")}</p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => startEdit(p)} className="text-base-400 hover:text-accent transition-colors cursor-pointer p-1">
@@ -1012,15 +1012,16 @@ function WeightPresetSection({
 
       <div className="space-y-3">
         {presets.map((p) => {
-          const t = p.values.reduce((a, b) => a + b, 0);
+          const pv = padToVector6(p.values);
+          const t = pv.reduce((a, b) => a + b, 0);
           return (
             <div key={p.id} className="flex items-center gap-4 p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
-              <WeightPieChart values={p.values} size={48} />
+              <WeightPieChart values={pv} size={48} />
               <div className="flex-1">
                 <p className="text-sm font-medium text-base-800">{p.name}</p>
                 <div className="flex gap-2 mt-1">
                   {pieDimLabels.map((label, i) => {
-                    const pct = t > 0 ? Math.round((p.values[i] / t) * 100) : 0;
+                    const pct = t > 0 ? Math.round((pv[i] / t) * 100) : 0;
                     return (
                       <span key={i} className="text-[11px] font-medium px-1.5 py-0.5 rounded" style={{ background: pieColors[i] + "18", color: pieColors[i] }}>
                         {label.split(":")[0]}:{pct}%
