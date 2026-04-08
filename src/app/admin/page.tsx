@@ -22,6 +22,13 @@ import type { Quiz, QuizResponse, TargetPreset, WeightPreset, Choice, Vector5, V
 
 type Tab = "users" | "quiz" | "settings";
 
+/** Firestoreの既存5要素データを6要素に安全に補完 */
+function padToVector6(values: number[]): Vector6 {
+  const v: number[] = [...values];
+  while (v.length < 6) v.push(v.length === 5 ? 5 : 0);
+  return v.slice(0, 6) as Vector6;
+}
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("users");
   const [responses, setResponses] = useState<QuizResponse[]>([]);
@@ -167,7 +174,7 @@ function UsersTab({
     })
     .map((r) => ({
       ...r,
-      sync: target && weight ? calcSyncScore(r.finalVector, target.values, weight.values) : 0,
+      sync: target && weight ? calcSyncScore(padToVector6(r.finalVector), padToVector6(target.values), padToVector6(weight.values)) : 0,
     }));
 
   if (sortField === "sync") scored.sort((a, b) => sortDir * (a.sync - b.sync));
@@ -230,7 +237,7 @@ function UsersTab({
             {scored.map((u, i) => {
               const sl = getSyncLabel(u.sync);
               const color = getSyncColor(u.sync);
-              const vecStr = `[${u.finalVector.map((v) => v.toFixed(1)).join(", ")}]`;
+              const vecStr = `[${padToVector6(u.finalVector).map((v) => v.toFixed(1)).join(", ")}]`;
               return (
                 <tr key={u.id} className="border-b border-base-100 last:border-0 hover:bg-accent/[0.04] cursor-pointer transition-colors" onClick={() => setDetailIdx(i)}>
                   <td className="px-5 py-3.5">
@@ -337,7 +344,7 @@ function DetailPanel({
 
   const target = targetPresets.find((p) => p.id === tId);
   const weight = weightPresets.find((p) => p.id === wId);
-  const score = target && weight ? calcSyncScore(user.finalVector, target.values, weight.values) : 0;
+  const score = target && weight ? calcSyncScore(padToVector6(user.finalVector), padToVector6(target.values), padToVector6(weight.values)) : 0;
   const sl = getSyncLabel(score);
   const color = getSyncColor(score);
   const circumference = 326.73;
@@ -784,7 +791,7 @@ function PresetSection({
   const startEdit = (p: TargetPreset | WeightPreset) => {
     setEditId(p.id);
     setFormName(p.name);
-    setFormValues([...p.values] as Vector6);
+    setFormValues(padToVector6(p.values));
     setShowForm(true);
   };
 
@@ -933,7 +940,7 @@ function WeightPresetSection({
   const startEdit = (p: WeightPreset) => {
     setEditId(p.id);
     setFormName(p.name);
-    setFormValues([...p.values] as Vector6);
+    setFormValues(padToVector6(p.values));
     setShowForm(true);
   };
 
