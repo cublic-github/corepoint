@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CorePoint - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base: { 50: '#f7f8f8', 100: '#edeef1', 200: '#d8dbe1', 300: '#b5bac5', 400: '#8d94a3', 500: '#6e7788', 600: '#5a616f', 700: '#494e5a', 800: '#3f434d', 900: '#1a1c22', 950: '#111216' },
+            accent: { DEFAULT: '#0d9488', light: '#14b8a6', dark: '#0f766e', glow: 'rgba(13,148,136,0.12)' },
+            warm: { DEFAULT: '#d97706', light: '#f59e0b', soft: '#fef3c7' },
+            sync: { high: '#059669', mid: '#d97706', low: '#dc2626' },
+          },
+          fontFamily: { sans: ['"Fira Sans"', '"Noto Sans JP"', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    .sidebar-item { transition: all 0.15s ease; }
+    .sidebar-item:hover { background: rgba(13,148,136,0.06); }
+    .sidebar-item.active { background: rgba(13,148,136,0.1); color: #0d9488; border-right: 2px solid #0d9488; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .sort-btn { cursor: pointer; user-select: none; }
+    .sort-btn:hover { color: #0d9488; }
+    .user-row { transition: background 0.15s ease; cursor: pointer; }
+    .user-row:hover { background: rgba(13,148,136,0.04); }
+    .detail-panel { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease; }
+    .detail-panel.hidden { transform: translateX(100%); opacity: 0; pointer-events: none; }
+    .detail-panel.visible { transform: translateX(0); opacity: 1; }
+    .bar-fill { transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+    .sync-ring { transition: stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .preset-chip { transition: all 0.15s ease; cursor: pointer; }
+    .preset-chip:hover { border-color: #0d9488; }
+    .preset-chip.active { background: rgba(13,148,136,0.1); border-color: #0d9488; color: #0d9488; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body class="bg-base-50 text-base-900 min-h-screen">
+
+  <!-- ========== サイドバー（固定） ========== -->
+  <aside class="fixed top-0 left-0 w-56 h-screen bg-white border-r border-base-200 flex flex-col z-40">
+    <!-- ロゴ -->
+    <div class="px-5 h-14 flex items-center border-b border-base-200">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 bg-accent rounded flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m-7.071-2.929l.707-.707m12.728 0l.707.707M3 12h1m16 0h1m-2.929-7.071l-.707.707M6.636 6.636l-.707-.707"/></svg>
+        </div>
+        <span class="font-semibold text-base-800 tracking-tight text-sm">CorePoint</span>
+      </div>
+    </div>
+
+    <!-- ナビ -->
+    <nav class="py-4 px-2">
+      <p class="text-[11px] font-medium text-base-400 uppercase tracking-wider px-3 mb-2">Menu</p>
+      <button onclick="showTab('users')" id="nav-users" class="sidebar-item active w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-l text-sm font-medium text-base-600">
+        <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+        回答者一覧
+      </button>
+      <button onclick="showTab('quiz')" id="nav-quiz" class="sidebar-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-l text-sm font-medium text-base-600">
+        <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        クイズ管理
+      </button>
+      <button onclick="showTab('settings')" id="nav-settings" class="sidebar-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-l text-sm font-medium text-base-600">
+        <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        基本設定
+      </button>
+    </nav>
+
+    <!-- ユーザー（最下部に固定） -->
+    <div class="mt-auto px-4 py-4 border-t border-base-200">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center text-accent text-xs font-semibold">AD</div>
+        <div>
+          <p class="text-sm font-medium text-base-800">Admin</p>
+          <p class="text-xs text-base-400">admin@example.com</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== メインコンテンツ ========== -->
+  <main class="ml-56 flex-1 min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="h-14 border-b border-base-200 bg-white/80 backdrop-blur-sm flex items-center px-6 sticky top-0 z-30">
+      <h1 id="page-title" class="text-sm font-semibold text-base-800">回答者一覧</h1>
+    </header>
+
+    <!-- ===== 回答者一覧タブ ===== -->
+    <div id="tab-users" class="tab-content active">
+      <div class="p-6">
+
+        <!-- 上部コントロール -->
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <svg class="w-4 h-4 text-base-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" placeholder="名前・メールで検索..." class="bg-white border border-base-200 rounded-lg pl-9 pr-4 py-2 text-sm w-64 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30">
+            </div>
+          </div>
+          <!-- グローバルプリセット切り替え -->
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-base-400 font-medium">基準:</span>
+            <select id="global-target-preset" onchange="applyGlobalPreset()" class="bg-white border border-base-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer">
+              <option value="analyst">分析者タイプ</option>
+              <option value="entertainer">エンタメタイプ</option>
+              <option value="mentor">メンタータイプ</option>
+              <option value="realist">リアリストタイプ</option>
+              <option value="balanced">バランスタイプ</option>
+            </select>
+            <select id="global-weight-preset" onchange="applyGlobalPreset()" class="bg-white border border-base-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer">
+              <option value="equal">均等ウェイト</option>
+              <option value="intellectual">知的対話重視</option>
+              <option value="vibe">ノリ・相性重視</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- テーブル -->
+        <div class="bg-white rounded-xl border border-base-200 overflow-hidden">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-base-200 bg-base-50/50">
+                <th class="text-left text-xs font-medium text-base-400 uppercase tracking-wider px-5 py-3">名前</th>
+                <th class="text-left text-xs font-medium text-base-400 uppercase tracking-wider px-5 py-3">メール</th>
+                <th class="text-left text-xs font-medium text-base-400 uppercase tracking-wider px-5 py-3 sort-btn" onclick="sortTable('date')">
+                  回答日
+                  <svg class="w-3 h-3 inline ml-1 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+                </th>
+                <th class="text-left text-xs font-medium text-base-400 uppercase tracking-wider px-5 py-3 sort-btn" onclick="sortTable('sync')">
+                  Sync Rate
+                  <svg class="w-3 h-3 inline ml-1 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+                </th>
+                <th class="text-left text-xs font-medium text-base-400 uppercase tracking-wider px-5 py-3">判定</th>
+              </tr>
+            </thead>
+            <tbody id="user-table-body">
+              <!-- JS で生成 -->
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-4 text-sm text-base-400">
+          <span id="user-count">8</span> 名の回答者
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== クイズ管理タブ ===== -->
+    <div id="tab-quiz" class="tab-content">
+      <div class="p-6 max-w-4xl">
+
+        <!-- ====== 使用中クイズ ====== -->
+        <div class="mb-10">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <h3 class="font-semibold text-base-800">使用中のクイズ</h3>
+              <span class="text-xs font-medium text-white bg-accent px-2 py-0.5 rounded-full">3 問</span>
+            </div>
+            <p class="text-xs text-base-400">候補者に実際に出題される設問です。ドラッグで並び替えできます。</p>
+          </div>
+
+          <div class="space-y-2">
+            <!-- 使用中 Q1 -->
+            <div class="bg-white rounded-lg border border-accent/30 p-4 flex items-center gap-4 hover:shadow-sm transition-all group">
+              <div class="flex items-center gap-1 text-base-300 cursor-grab">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-accent bg-accent/10 px-2 py-1 rounded shrink-0">Q1</span>
+              <span class="text-sm font-medium text-base-800 flex-1">「タメ口」の語源は何だと思う？</span>
+              <span class="text-xs text-base-400">5 選択肢</span>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="alert('編集モーダル（モック）')" class="p-1.5 text-base-400 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer" title="編集">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="p-1.5 text-base-400 hover:text-warm hover:bg-warm/5 rounded-lg transition-colors cursor-pointer" title="ストックへ戻す">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 使用中 Q2 -->
+            <div class="bg-white rounded-lg border border-accent/30 p-4 flex items-center gap-4 hover:shadow-sm transition-all group">
+              <div class="flex items-center gap-1 text-base-300 cursor-grab">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-accent bg-accent/10 px-2 py-1 rounded shrink-0">Q2</span>
+              <span class="text-sm font-medium text-base-800 flex-1">友人が深夜にSNSで愚痴を連投している。どうする？</span>
+              <span class="text-xs text-base-400">5 選択肢</span>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1.5 text-base-400 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer" title="編集">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="p-1.5 text-base-400 hover:text-warm hover:bg-warm/5 rounded-lg transition-colors cursor-pointer" title="ストックへ戻す">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 使用中 Q3 -->
+            <div class="bg-white rounded-lg border border-accent/30 p-4 flex items-center gap-4 hover:shadow-sm transition-all group">
+              <div class="flex items-center gap-1 text-base-300 cursor-grab">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5"/></svg>
+              </div>
+              <span class="text-xs font-semibold text-accent bg-accent/10 px-2 py-1 rounded shrink-0">Q3</span>
+              <span class="text-sm font-medium text-base-800 flex-1">新しいツールの導入を提案されたとき、最初に気になるのは？</span>
+              <span class="text-xs text-base-400">5 選択肢</span>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1.5 text-base-400 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer" title="編集">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="p-1.5 text-base-400 hover:text-warm hover:bg-warm/5 rounded-lg transition-colors cursor-pointer" title="ストックへ戻す">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 登録済みストック ====== -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <h3 class="font-semibold text-base-800">登録済みストック</h3>
+              <span class="text-xs font-medium text-base-500 bg-base-100 px-2 py-0.5 rounded-full">2 問</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('json-import-area').classList.toggle('hidden')" class="flex items-center gap-1.5 border border-base-200 hover:border-accent text-base-600 hover:text-accent px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                JSON インポート
+              </button>
+              <button onclick="alert('新規設問作成（モック）')" class="flex items-center gap-1.5 bg-accent hover:bg-accent-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                新規作成
+              </button>
+            </div>
+          </div>
+
+          <!-- JSONインポートエリア -->
+          <div id="json-import-area" class="hidden bg-white rounded-xl border border-base-200 p-5 mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-medium text-base-800">JSON 一括インポート</h4>
+              <button onclick="document.getElementById('json-import-area').classList.add('hidden')" class="p-1 text-base-400 hover:text-base-600 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <!-- テンプレートコピーエリア -->
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-[11px] text-base-400 font-medium uppercase tracking-wider">Template</label>
+                <button onclick="copyTemplate()" id="copy-btn" class="flex items-center gap-1 text-xs text-accent hover:text-accent-dark transition-colors cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+                  <span id="copy-label">コピー</span>
+                </button>
+              </div>
+              <pre id="json-template" class="bg-base-900 text-green-400 rounded-lg px-4 py-3 text-xs font-mono overflow-x-auto select-all">[
+  {
+    "question": "設問テキストをここに入力",
+    "choices": [
+      { "text": "選択肢A", "vector": [0.0, 0.0, 0.0, 0.0, 0.0] },
+      { "text": "選択肢B", "vector": [0.0, 0.0, 0.0, 0.0, 0.0] },
+      { "text": "選択肢C", "vector": [0.0, 0.0, 0.0, 0.0, 0.0] },
+      { "text": "選択肢D", "vector": [0.0, 0.0, 0.0, 0.0, 0.0] },
+      { "text": "選択肢E", "vector": [0.0, 0.0, 0.0, 0.0, 0.0] }
+    ]
+  }
+]</pre>
+              <p class="text-[11px] text-base-400 mt-1.5">vector: [c1:抽象化, c2:指向性, c3:合理性, c4:社会的距離, c5:言語解像度]</p>
+            </div>
+
+            <!-- 貼り付けエリア -->
+            <div>
+              <label class="text-[11px] text-base-400 font-medium uppercase tracking-wider block mb-1.5">Import</label>
+              <textarea rows="8" id="json-input" class="w-full bg-base-50 border border-base-200 rounded-lg px-4 py-3 text-xs font-mono text-base-700 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 resize-y" placeholder="ここに JSON を貼り付けてください..."></textarea>
+              <div class="flex items-center justify-end mt-3">
+                <button class="bg-accent hover:bg-accent-dark text-white text-sm px-4 py-1.5 rounded-lg font-medium transition-colors cursor-pointer">インポート</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-xs text-base-400 mb-4">未使用の設問です。「+ 使用する」で使用中に追加できます。</p>
+
+          <div class="space-y-2">
+            <!-- ストック1（未使用） -->
+            <div class="bg-white rounded-lg border border-base-200 p-4 flex items-center gap-4 hover:border-base-300 transition-all group">
+              <span class="text-xs text-base-400 shrink-0 w-5 text-center">4</span>
+              <span class="text-sm text-base-800 flex-1">上司が明らかに間違った指示を出した。あなたの最初の行動は？</span>
+              <span class="text-xs text-base-400">5 選択肢</span>
+              <button class="text-[10px] font-medium text-base-400 bg-base-100 hover:bg-accent/10 hover:text-accent px-2 py-0.5 rounded-full transition-colors cursor-pointer">+ 使用する</button>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1.5 text-base-400 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer" title="編集">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="p-1.5 text-base-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="削除">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- ストック5（未使用） -->
+            <div class="bg-white rounded-lg border border-base-200 p-4 flex items-center gap-4 hover:border-base-300 transition-all group">
+              <span class="text-xs text-base-400 shrink-0 w-5 text-center">5</span>
+              <span class="text-sm text-base-800 flex-1">難しい概念を後輩に説明するとき、あなたのスタイルは？</span>
+              <span class="text-xs text-base-400">5 選択肢</span>
+              <button class="text-[10px] font-medium text-base-400 bg-base-100 hover:bg-accent/10 hover:text-accent px-2 py-0.5 rounded-full transition-colors cursor-pointer">+ 使用する</button>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1.5 text-base-400 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors cursor-pointer" title="編集">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="p-1.5 text-base-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="削除">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== 基本設定タブ ===== -->
+    <div id="tab-settings" class="tab-content">
+      <div class="p-6 max-w-3xl">
+
+        <!-- ターゲットプリセット管理 -->
+        <div class="bg-white rounded-xl border border-base-200 p-6 mb-6">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-semibold text-base-800">ターゲット人物像プリセット</h3>
+            <button onclick="showNewPresetForm('target')" class="flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-dark transition-colors cursor-pointer">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+              新規追加
+            </button>
+          </div>
+          <div class="space-y-3" id="target-presets-list">
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">分析者タイプ</p>
+                <p class="text-xs text-base-400 mt-0.5">c1:8.0 c2:2.0 c3:8.0 c4:3.0 c5:6.0</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">エンタメタイプ</p>
+                <p class="text-xs text-base-400 mt-0.5">c1:4.0 c2:9.0 c3:3.0 c4:7.0 c5:8.0</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">メンタータイプ</p>
+                <p class="text-xs text-base-400 mt-0.5">c1:7.0 c2:4.0 c3:5.0 c4:9.0 c5:9.0</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">リアリストタイプ</p>
+                <p class="text-xs text-base-400 mt-0.5">c1:5.0 c2:1.0 c3:9.0 c4:2.0 c5:4.0</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">バランスタイプ</p>
+                <p class="text-xs text-base-400 mt-0.5">c1:5.0 c2:5.0 c3:5.0 c4:5.0 c5:5.0</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 重みプリセット管理 -->
+        <div class="bg-white rounded-xl border border-base-200 p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-semibold text-base-800">重みプリセット</h3>
+            <button onclick="showNewPresetForm('weight')" class="flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-dark transition-colors cursor-pointer">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+              新規追加
+            </button>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">均等ウェイト</p>
+                <p class="text-xs text-base-400 mt-0.5">w1:1 w2:1 w3:1 w4:1 w5:1</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">知的対話重視</p>
+                <p class="text-xs text-base-400 mt-0.5">w1:5 w2:1 w3:1 w4:1 w5:5</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-base-200 rounded-lg hover:border-base-300 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-base-800">ノリ・相性重視</p>
+                <p class="text-xs text-base-400 mt-0.5">w1:1 w2:5 w3:1 w4:5 w5:2</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="text-base-400 hover:text-accent transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="text-base-400 hover:text-red-500 transition-colors cursor-pointer p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========== ユーザー詳細パネル（右スライド） ========== -->
+  <div id="detail-overlay" class="fixed inset-0 bg-black/20 z-40 hidden" onclick="closeDetail()"></div>
+  <div id="detail-panel" class="detail-panel hidden fixed top-0 right-0 w-[520px] h-full bg-white border-l border-base-200 z-50 overflow-y-auto">
+
+    <!-- パネルヘッダー -->
+    <div class="sticky top-0 bg-white border-b border-base-200 px-6 py-4 flex items-center justify-between z-10">
+      <div>
+        <h3 id="detail-name" class="font-semibold text-base-900">山田 太郎</h3>
+        <p id="detail-email" class="text-sm text-base-400">taro.yamada@example.com</p>
+      </div>
+      <button onclick="closeDetail()" class="p-1.5 hover:bg-base-100 rounded-lg transition-colors cursor-pointer">
+        <svg class="w-5 h-5 text-base-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="p-6">
+
+      <!-- シンクロ率 -->
+      <div class="text-center mb-8">
+        <p class="text-xs text-base-400 uppercase tracking-wider font-medium mb-3">Sync Rate</p>
+        <div class="relative inline-flex items-center justify-center">
+          <svg class="w-40 h-40 -rotate-90" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#edeef1" stroke-width="6"/>
+            <circle id="detail-ring" cx="60" cy="60" r="52" fill="none" stroke="#0d9488" stroke-width="6"
+              stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="58.8" class="sync-ring"/>
+          </svg>
+          <div class="absolute">
+            <span id="detail-score" class="text-4xl font-bold text-base-900">82</span>
+            <span class="text-lg text-base-400">%</span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="detail-label" class="inline-block bg-accent/10 text-accent px-3 py-1 rounded-full text-sm font-medium">Resonant</span>
+        </div>
+        <p id="detail-label-desc" class="text-xs text-base-400 mt-2">共鳴 - 視点は違うが前提が同じ。議論が建設的に進む。</p>
+      </div>
+
+      <!-- プリセット切り替え（詳細パネル内） -->
+      <div class="bg-base-50 rounded-xl p-4 mb-6">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="text-[11px] text-base-400 font-medium uppercase tracking-wider block mb-1.5">Target</label>
+            <select id="detail-target-preset" onchange="updateDetailSync()" class="w-full bg-white border border-base-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer">
+              <option value="analyst">分析者タイプ</option>
+              <option value="entertainer">エンタメタイプ</option>
+              <option value="mentor">メンタータイプ</option>
+              <option value="realist">リアリストタイプ</option>
+              <option value="balanced">バランスタイプ</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] text-base-400 font-medium uppercase tracking-wider block mb-1.5">Weight</label>
+            <select id="detail-weight-preset" onchange="updateDetailSync()" class="w-full bg-white border border-base-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer">
+              <option value="equal">均等</option>
+              <option value="intellectual">知的対話重視</option>
+              <option value="vibe">ノリ・相性重視</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5次元ベクトル -->
+      <div class="mb-6">
+        <h4 class="text-xs text-base-400 font-medium uppercase tracking-wider mb-4">Vector Breakdown</h4>
+        <div class="space-y-4" id="detail-vectors">
+          <!-- JSで生成 -->
+        </div>
+      </div>
+
+      <!-- ターゲット比較 -->
+      <div>
+        <h4 class="text-xs text-base-400 font-medium uppercase tracking-wider mb-4">Target Comparison</h4>
+        <div class="bg-base-50 rounded-xl p-4">
+          <div class="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center text-xs text-base-400 mb-3 font-medium">
+            <span></span><span class="text-center">User</span><span></span><span class="text-center">Target</span>
+          </div>
+          <div class="space-y-2.5" id="detail-comparison">
+            <!-- JSで生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== データ定義 =====
+    const targetPresets = {
+      analyst:     { name: '分析者タイプ', values: [8, 2, 8, 3, 6] },
+      entertainer: { name: 'エンタメタイプ', values: [4, 9, 3, 7, 8] },
+      mentor:      { name: 'メンタータイプ', values: [7, 4, 5, 9, 9] },
+      realist:     { name: 'リアリストタイプ', values: [5, 1, 9, 2, 4] },
+      balanced:    { name: 'バランスタイプ', values: [5, 5, 5, 5, 5] },
+    };
+
+    const weightPresets = {
+      equal:        { name: '均等', values: [1, 1, 1, 1, 1] },
+      intellectual: { name: '知的対話重視', values: [5, 1, 1, 1, 5] },
+      vibe:         { name: 'ノリ・相性重視', values: [1, 5, 1, 5, 2] },
+    };
+
+    const dimLabels = [
+      { key: 'c1', name: '抽象化', color: '#0d9488', lo: '具象', hi: '抽象' },
+      { key: 'c2', name: '指向性', color: '#d97706', lo: 'マジレス', hi: 'ネタ' },
+      { key: 'c3', name: '合理性', color: '#2563eb', lo: '情緒的', hi: '合理的' },
+      { key: 'c4', name: '社会的距離', color: '#7c3aed', lo: '傍観', hi: '介入' },
+      { key: 'c5', name: '言語解像度', color: '#059669', lo: '未変換', hi: '翻訳上手' },
+    ];
+
+    const syncLabels = [
+      { min: 90, label: 'Synchronized', desc: '阿吽の呼吸', cls: 'bg-emerald-100 text-emerald-700' },
+      { min: 70, label: 'Resonant', desc: '共鳴', cls: 'bg-accent/10 text-accent' },
+      { min: 50, label: 'Strained', desc: '要歩み寄り', cls: 'bg-amber-100 text-amber-700' },
+      { min: 30, label: 'Disconnected', desc: '断絶', cls: 'bg-orange-100 text-orange-700' },
+      { min: 0,  label: 'Void', desc: '虚無', cls: 'bg-red-100 text-red-700' },
+    ];
+
+    // サンプルユーザーデータ
+    const users = [
+      { name: '山田 太郎', email: 'taro.yamada@example.com', date: '2026-03-24', vec: [7.2, 8.5, 4.0, 6.0, 7.8] },
+      { name: '佐藤 花子', email: 'hanako.sato@example.com', date: '2026-03-23', vec: [8.0, 3.0, 7.5, 4.0, 8.2] },
+      { name: '鈴木 一郎', email: 'ichiro.suzuki@example.com', date: '2026-03-23', vec: [5.5, 6.0, 5.0, 7.0, 5.5] },
+      { name: '田中 美咲', email: 'misaki.tanaka@example.com', date: '2026-03-22', vec: [3.0, 9.0, 2.5, 8.0, 7.0] },
+      { name: '高橋 健太', email: 'kenta.takahashi@example.com', date: '2026-03-22', vec: [6.5, 2.0, 8.0, 3.5, 4.0] },
+      { name: '伊藤 さくら', email: 'sakura.ito@example.com', date: '2026-03-21', vec: [9.0, 4.5, 6.0, 5.0, 9.0] },
+      { name: '渡辺 大輔', email: 'daisuke.watanabe@example.com', date: '2026-03-20', vec: [4.0, 7.5, 3.0, 9.0, 6.5] },
+      { name: '中村 由美', email: 'yumi.nakamura@example.com', date: '2026-03-20', vec: [6.0, 5.0, 7.0, 4.5, 6.0] },
+    ];
+
+    // ===== 計算 =====
+    function calcSync(userVec, targetKey, weightKey) {
+      const t = targetPresets[targetKey].values;
+      const w = weightPresets[weightKey].values;
+      let sum = 0;
+      for (let i = 0; i < 5; i++) sum += w[i] * Math.pow(userVec[i] - t[i], 2);
+      const D = Math.sqrt(sum);
+      return Math.round(100 / (1 + 0.1 * D));
+    }
+
+    function getSyncLabel(score) {
+      return syncLabels.find(l => score >= l.min);
+    }
+
+    function getSyncColor(score) {
+      if (score >= 90) return '#059669';
+      if (score >= 70) return '#0d9488';
+      if (score >= 50) return '#d97706';
+      if (score >= 30) return '#ea580c';
+      return '#dc2626';
+    }
+
+    // ===== テーブル描画 =====
+    let sortField = 'date';
+    let sortDir = -1;
+
+    function renderTable() {
+      const tKey = document.getElementById('global-target-preset').value;
+      const wKey = document.getElementById('global-weight-preset').value;
+      const sorted = [...users].map((u, i) => ({ ...u, idx: i, sync: calcSync(u.vec, tKey, wKey) }));
+
+      if (sortField === 'sync') sorted.sort((a, b) => sortDir * (a.sync - b.sync));
+      else if (sortField === 'date') sorted.sort((a, b) => sortDir * a.date.localeCompare(b.date));
+
+      const tbody = document.getElementById('user-table-body');
+      tbody.innerHTML = sorted.map(u => {
+        const sl = getSyncLabel(u.sync);
+        const color = getSyncColor(u.sync);
+        return `
+          <tr class="user-row border-b border-base-100 last:border-0" onclick="openDetail(${u.idx})">
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white" style="background:${color}">${u.name[0]}</div>
+                <span class="text-sm font-medium text-base-800">${u.name}</span>
+              </div>
+            </td>
+            <td class="px-5 py-3.5 text-sm text-base-500">${u.email}</td>
+            <td class="px-5 py-3.5 text-sm text-base-500">${u.date}</td>
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-2">
+                <div class="w-16 h-1.5 bg-base-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${u.sync}%;background:${color}"></div></div>
+                <span class="text-sm font-semibold" style="color:${color}">${u.sync}%</span>
+              </div>
+            </td>
+            <td class="px-5 py-3.5"><span class="text-xs font-medium px-2 py-1 rounded-full ${sl.cls}">${sl.label}</span></td>
+          </tr>`;
+      }).join('');
+    }
+
+    function sortTable(field) {
+      if (sortField === field) sortDir *= -1;
+      else { sortField = field; sortDir = -1; }
+      renderTable();
+    }
+
+    function applyGlobalPreset() { renderTable(); }
+
+    // ===== 詳細パネル =====
+    let activeUserIdx = -1;
+
+    function openDetail(idx) {
+      activeUserIdx = idx;
+      const u = users[idx];
+      document.getElementById('detail-name').textContent = u.name;
+      document.getElementById('detail-email').textContent = u.email;
+
+      // グローバルのプリセットを引き継ぐ
+      document.getElementById('detail-target-preset').value = document.getElementById('global-target-preset').value;
+      document.getElementById('detail-weight-preset').value = document.getElementById('global-weight-preset').value;
+
+      updateDetailSync();
+
+      document.getElementById('detail-overlay').classList.remove('hidden');
+      document.getElementById('detail-panel').classList.remove('hidden');
+      requestAnimationFrame(() => document.getElementById('detail-panel').classList.add('visible'));
+    }
+
+    function closeDetail() {
+      document.getElementById('detail-panel').classList.remove('visible');
+      setTimeout(() => {
+        document.getElementById('detail-panel').classList.add('hidden');
+        document.getElementById('detail-overlay').classList.add('hidden');
+      }, 300);
+    }
+
+    function updateDetailSync() {
+      if (activeUserIdx < 0) return;
+      const u = users[activeUserIdx];
+      const tKey = document.getElementById('detail-target-preset').value;
+      const wKey = document.getElementById('detail-weight-preset').value;
+      const score = calcSync(u.vec, tKey, wKey);
+      const sl = getSyncLabel(score);
+      const color = getSyncColor(score);
+
+      // スコア表示
+      document.getElementById('detail-score').textContent = score;
+      const circumference = 326.73;
+      const offset = circumference - (circumference * score / 100);
+      document.getElementById('detail-ring').style.strokeDashoffset = offset;
+      document.getElementById('detail-ring').style.stroke = color;
+
+      // ラベル
+      const labelEl = document.getElementById('detail-label');
+      labelEl.textContent = sl.label;
+      labelEl.className = 'inline-block px-3 py-1 rounded-full text-sm font-medium ' + sl.cls;
+      document.getElementById('detail-label-desc').textContent = sl.desc;
+
+      // ベクトルバー
+      const t = targetPresets[tKey].values;
+      const vecHtml = dimLabels.map((d, i) => `
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-base-600">${d.key}: ${d.name}</span>
+            <span class="font-medium" style="color:${d.color}">${u.vec[i].toFixed(1)}</span>
+          </div>
+          <div class="relative w-full h-2 bg-base-100 rounded-full overflow-hidden">
+            <div class="bar-fill absolute h-full rounded-full" style="width:${u.vec[i]*10}%;background:${d.color}"></div>
+            <div class="absolute top-0 h-full w-0.5 bg-base-900/30" style="left:${t[i]*10}%" title="Target: ${t[i]}"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-base-400 mt-0.5"><span>${d.lo}</span><span>${d.hi}</span></div>
+        </div>`).join('');
+      document.getElementById('detail-vectors').innerHTML = vecHtml;
+
+      // 比較表
+      const compHtml = dimLabels.map((d, i) => `
+        <div class="grid grid-cols-[1fr_50px_24px_50px] gap-1 items-center text-sm">
+          <span class="text-base-600">${d.key}</span>
+          <span class="text-center font-medium" style="color:${d.color}">${u.vec[i].toFixed(1)}</span>
+          <span class="text-center text-base-300">vs</span>
+          <span class="text-center text-base-500">${t[i].toFixed(1)}</span>
+        </div>`).join('');
+      document.getElementById('detail-comparison').innerHTML = compHtml;
+    }
+
+    // ===== タブ切り替え =====
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+      document.getElementById('nav-' + name).classList.add('active');
+      const titles = { users: '回答者一覧', quiz: 'クイズ管理', settings: '基本設定' };
+      document.getElementById('page-title').textContent = titles[name] || name;
+    }
+
+    // JSONテンプレートコピー
+    function copyTemplate() {
+      const text = document.getElementById('json-template').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const label = document.getElementById('copy-label');
+        label.textContent = 'コピーしました';
+        setTimeout(() => { label.textContent = 'コピー'; }, 2000);
+      });
+    }
+
+    function showNewPresetForm(type) {
+      alert('新規プリセット追加フォーム（モック）');
+    }
+
+    // 初期描画
+    renderTable();
+  </script>
+</body>
+</html>

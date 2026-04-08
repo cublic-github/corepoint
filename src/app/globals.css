@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-base-50: #f7f8f8;
+  --color-base-100: #edeef1;
+  --color-base-200: #d8dbe1;
+  --color-base-300: #b5bac5;
+  --color-base-400: #8d94a3;
+  --color-base-500: #6e7788;
+  --color-base-600: #5a616f;
+  --color-base-700: #494e5a;
+  --color-base-800: #3f434d;
+  --color-base-900: #1a1c22;
+  --color-base-950: #111216;
+
+  --color-accent: #0d9488;
+  --color-accent-light: #14b8a6;
+  --color-accent-dark: #0f766e;
+
+  --color-warm: #d97706;
+  --color-warm-light: #f59e0b;
+  --color-warm-soft: #fef3c7;
+
+  --color-sync-high: #059669;
+  --color-sync-mid: #d97706;
+  --color-sync-low: #dc2626;
+
+  --font-sans: "Fira Sans", "Noto Sans JP", system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.4s ease;
+  --animate-slide-in: slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Weight slider styling */
+input[type="range"].weight-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"].weight-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--track-color) var(--pct), #d8dbe1 var(--pct));
+}
+input[type="range"].weight-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--thumb-color);
+  margin-top: -5px;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+input[type="range"].weight-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--track-color) var(--pct), #d8dbe1 var(--pct));
+}
+input[type="range"].weight-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--thumb-color);
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
